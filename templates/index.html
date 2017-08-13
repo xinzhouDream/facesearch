@@ -1,0 +1,307 @@
+$def with (resp)
+
+$def result_to_list(resp):
+    <div class = "row">
+    $ infolist = resp['info_list']
+    $ videoinfo = resp['info_list']['video_info']
+    $ starinfo = resp['info_list']['star_info']
+    $ sim_id = resp['info_list']['sim_id']
+    $ max_display = 10
+    $ index = 0
+    $ col_num = len(videoinfo[0])
+    $ row_num =  max_display
+    <table style = "margin:auto;" cellspacing="4" cellpadding="4" border="1" bordercolor="#33CCFF" height="50" width="200">
+    <tr>
+    <td>演员名称</td>
+    <td>演员信息</td>
+    </tr>
+    <tr>
+    <td>$starinfo['name']</td>
+    <td>$starinfo['description']</td>
+    </tr>
+    </table>
+    <hr/>
+    <table style = "margin:auto;" cellspacing="4" cellpadding="4" border="1" bordercolor="#33CCFF" height="200" width="600">
+    <tr>
+    <td>影视剧名称</td>
+    <td>上映年份</td>
+    <td>类型</td>
+    <td>演员信息</td>
+    <td>链接</td>
+    </tr>
+    $for i in range(row_num):
+        <tr>
+        $for j in range(col_num):
+             $ index = i
+             $if index>=len(videoinfo):
+                 $break
+             $if j != col_num - 1 :
+                 <td>$videoinfo[index][j]</td>
+             $if j == col_num -1:
+                 <td><a href="$videoinfo[index][j]">$videoinfo[index][j]</a></td>
+        </tr>
+    </table>
+    </div>
+
+$def result_to_table(resp):
+    <div class="row">
+    $if 2 == resp['status']: <div class="bigger"><h4>特征提取: $resp['feat_time'] 毫秒, 检索: $resp['knn_time'] 毫秒, 返回 $len(resp['content']) 个结果</h4></div>
+
+    $ reslist = resp['content']
+    $ max_display = 100
+    $ index = 0
+    $ col_num = 4
+    $ row_num = 1 + min(max_display,len(reslist))/col_num
+   
+    $for i in range(row_num):
+        <div class="row">
+        $for j in range(col_num):
+            $ index = i*col_num + j
+            $if index>=len(reslist):
+                $break
+            <div class="col-sm-3" style="text-align: middle; vertical-align:middle">
+            $ imageid = reslist[index]['id']
+            $ score = '%.3f' % reslist[index]['score']            
+            $ url = '/images/%s.jpg'%imageid
+            <img src="$url" class = "img-thumbnail" height="200px"></img>
+            $if 2 == resp['status']: <br>$imageid, <font color="red">$score</font></br>
+            </div>
+        </div>
+    </div>
+ 
+$def result_to_html(resp):
+    
+    <div class="row">
+
+        $if 1 == resp['status']:
+	    <div class="bigger"><p class="lead">Failed to load image from <font color="red">$resp['load']['url']</font> .</p></div>
+        $elif 2 == resp['status']:
+            <div class="bigger">$:load_image(resp)</div>
+	    <div class="videolist">
+            $:result_to_list(resp)
+            </div>
+        $elif 3 == resp['status']:
+	    <div class="bigger"><p class="lead">Failed to load <font color="red">local image</font>. </p></div>
+         $elif 4 == resp['status']:
+            <div class="bigger"><p class="lead">Failed to connect to the server. Please try later. </p></div>
+
+        
+    </div>
+    <hr/>
+    $if 0 == resp['status']:
+        <div class="row">$:result_to_table(resp)</div>	    
+    
+    
+    
+    
+
+$def search_form(resp):
+    <div class="form_containe">
+      
+      <form class="form-inline" id="search_form_file"  enctype="multipart/form-data" method="post" action="upload" > 
+        <div class="form-group">
+          <label class="btn btn-lg btn-primary btn-shadow" for="upload_file" style="display:none"> <input id="upload_file" name="upload_file" type="file" onchange="fileChange(this);" style="display: none"/> upload a local image </label> <input class="btn btn-lg btn-primary btn-shadow" id="go" name="go" type="submit" value="image2sentence" style="display: none"/>
+        </div>
+                  
+      </form> 
+
+      <div id="a_container">
+          <label class="btn btn-lg btn-primary btn-shadow" id="pickfiles" >上传图片</label> </br>
+          <div id="progress_container"></div>
+          </div>
+
+    </div>
+    
+ 
+
+$def load_image(resp):
+    $ image = resp['load']
+    $ imageid = image['id']
+    $ sim_imageid = resp['info_list']['sim_id'] 
+    $ url = '/images/%s.jpg'%imageid 
+    $ sim_url = '/images/%s.jpg'%sim_imageid
+    $if not image:
+        $return
+    <hr/>
+    <div class="row">
+    <table style = "margin:auto;">
+    <tr>
+        <td><img src="$url" class = "img-thumbnail" height="200px"></img>
+            <br>原始图片</br>
+        </td>
+        <td><img src="$sim_url" class = "img-thumbnail" height="200px"></img>
+            <br>相似图片</br>
+        </td>
+    </tr>
+    </table>
+    </div>
+        
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基于内容图像检索</title>
+
+<link rel="stylesheet" href="/static/basic.css" type="text/css" media="screen" charset="utf-8"/>
+<link rel="stylesheet" href="/static/bootstrap.min.css" rel="stylesheet" />
+
+
+<!-- Custom styles for this template -->
+<link href="offcanvas.css" rel="stylesheet">
+<script type="text/javascript" src="/static/jquery.js"></script>
+<script type="text/javascript" src="/static/jquery.min.js"></script>
+<script type="text/javascript" src="/static/plupload-2.1.8/js/plupload.full.min.js"></script>
+<script type="text/javascript">
+
+jQuery(document).ready(function(){
+    jQuery('#search_form').submit(function(e){
+        jQuery('*').css("cursor", "progress");
+        var input = jQuery.trim( jQuery('#input_tags').val() );
+        if (!input) {
+            e.preventDefault();
+        }
+        else {
+            input = encodeURIComponent(input);
+            jQuery('#input_tags').val(input)
+        }
+    });
+    jQuery('*').css("cursor", "default");
+});
+  
+
+function fileCheck(file,up){  
+    var imgName = file.name;
+    var ext,idx;   
+    if (imgName == ''){  
+        alert("1");  
+        return; 
+    } else {   
+        idx = imgName.lastIndexOf(".");   
+        if (idx != -1 ){   
+            ext = imgName.substr(idx+1).toUpperCase();   
+            ext = ext.toLowerCase( ); 
+            if (ext != 'jpg' && ext != 'png' && ext != 'jpeg'){  
+                alert("请上传.jpg或.png格式的图片"); 
+                return;  
+            }   
+        } else {  
+           alert("请上传.jpg或.png格式的图片"); 
+            return;
+        }
+        var size = file.size;
+        if (size > 1024*1024*6){
+            alert("无法上传超过6M的图片");
+            return;
+        } 
+        up.start()  
+        //document.getElementById('search_form_file').submit();
+        return;
+    }
+}
+
+function feedbackCheck(target){ 
+    var arr = document.getElementsByName("optionsRadios");
+    var checked = false;
+    for(var i=0; i<arr.length; i++){
+        checked = checked || arr[i].checked;
+    }
+    if (!checked){
+        alert("Please select an evaluation for the generated caption.");  
+        return false; 
+    }
+    return true; 
+}
+
+jQuery(document).ready(function() { 
+    
+    var uploader = new plupload.Uploader({
+        runtimes : 'html5,flash,silverlight,html4',
+        browse_button : 'pickfiles', // you can pass an id...
+        container: document.getElementById('a_container'), // ... or DOM Element itself
+        url : 'upload',
+        resize: {
+            width: 500,
+            height: 300 
+        },
+
+        init: {
+                FilesAdded: function(up, files) {
+                        plupload.each(files, function(file) {
+                                fileCheck(file,up);
+                        });
+                        //uploader.start();
+                },
+
+                UploadProgress: function(up, file) {
+                        document.getElementById('progress_container').innerHTML = "<span>" + file.percent + "%</span>";
+                },
+
+                Error: function(up, err) {      //发生错误时触发
+           document.getElementById('progree_container').appendChild(document.createTextNode("\nError #" + err.code + ": " + err.message));
+        },
+
+                UploadComplete: function(up,file) {    //当上传队列中所有文件都上传完成后触发
+            document.getElementById('progress_container').innerHTML = "<span>上传成功，请稍后</span>";
+            document.getElementById('a_container').innerHTML+='<form action="generated" method="post" id="form2"></form>';
+            document.getElementById('form2').submit();
+        }
+        }
+
+
+        
+    });
+    
+    uploader.init();
+    
+    
+});
+
+
+
+</script>
+   
+</head>
+
+<body center>
+  <body>
+    <nav class="navbar navbar-default navbar-static-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+
+
+          </button>
+          <!-- <a class="navbar-brand" href="#">ImageCaptionDemo</a> -->
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">看属于你的电影</a></li>
+            <li><a href="#"></a></li>
+          </ul>
+        </div><!-- /.nav-collapse -->
+      </div><!-- /.container -->
+    </nav><!-- /.navbar -->
+<!-- <div style = "text-align:center;"> -->
+<div class="container">
+  <div class="homepage-intro">
+    <div class="bigger"> 
+    <div class=".col-sm-6 .col-md-5 .col-md-offset-2 .col-lg-6 .col-lg-offset-0">
+      <div class="bigger"><h1></h1></div>
+    </div>
+$:search_form(resp)
+  </div>
+  </div>
+$:result_to_html(resp)
+  <hr/>
+  <footer class="footer" >
+    <div class="container">
+        <div class="bigger"><p class="text-muted">&copy; FACE SEARCH 2017</p></div>
+    </div>
+  </footer>       
+</div>
+</body>
+</html>
+

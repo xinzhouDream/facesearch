@@ -1,0 +1,6 @@
+{
+ "max_hits": 8,
+ "collection": "toydata",
+ "feature":"hsv"
+}
+
